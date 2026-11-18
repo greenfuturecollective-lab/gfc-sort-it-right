@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sort It Right UNO Live · Green Future Collective</title>
+<link rel="icon" href="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w64">
+<meta property="og:image" content="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w600">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Serif:wght@700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<style>
+:root{--ink:#15332d;--leaf:#5d8b55;--cream:#fffaf0;--bg:#e8f1df;--accent:#e58b4b;
+--dry1:#1f78ae;--dry2:#2f9bd6;--wet1:#e05f22;--wet2:#ff7a3d;--san1:#c43165;--san2:#e8578a;--spc1:#6c3db0;--spc2:#8e5fd6}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:780px;margin:0 auto;padding:16px 14px 40px}
+.wrap.wide{max-width:1180px}
+.screen{display:none}.screen.on{display:block}
+.hero{background:var(--ink);color:#fff;border-radius:24px;padding:24px 20px;text-align:center;position:relative;overflow:hidden}
+.hero:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 22px,transparent 22px 44px)}
+.hero>*{position:relative}
+.tag{display:inline-block;background:#b9cf75;color:var(--ink);font-weight:700;font-size:12px;letter-spacing:.12em;padding:5px 12px;border-radius:999px}
+.hero h1{font-family:"Noto Serif",serif;font-size:clamp(28px,7vw,42px);margin:12px 0 6px;line-height:1.05}
+.hero p{margin:0 auto;max-width:460px;opacity:.9;font-size:15px}
+.panel{background:var(--cream);border-radius:20px;padding:18px;margin-top:14px}
+.lbl{font-weight:600;font-size:14px;display:block;margin:10px 0 6px}
+input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:12px;border:2px solid #d6d0bd;background:#fff;color:var(--ink)}
+input.code{text-transform:uppercase;letter-spacing:.3em;font-weight:800;text-align:center;font-size:26px}
+.btn{border:0;border-radius:14px;padding:14px 18px;font-weight:700;font-size:16px}
+.btn.primary{background:var(--leaf);color:#fff;width:100%;margin-top:12px}
+.btn.dark{background:var(--ink);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--ink);width:100%;margin-top:10px}
+.btn.small{padding:9px 14px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.err{color:#9b1c1c;font-weight:600;font-size:14px;margin-top:8px;min-height:20px}
+.status{font-size:12px;text-align:center;opacity:.7;margin-top:10px}
+.bins{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.binchip{border-radius:14px;padding:10px 6px;color:#fff;text-align:center;font-weight:700;font-size:12px;line-height:1.2}
+.binchip span{display:block;font-size:22px;margin-bottom:2px}
+.bg-dry{background:var(--dry1)}.bg-wet{background:var(--wet1)}.bg-san{background:var(--san1)}.bg-spc{background:var(--spc1)}
+/* host */
+.codebox{background:var(--ink);color:#fff;border-radius:22px;padding:18px;text-align:center}
+.codebox .c{font-size:clamp(48px,10vw,84px);font-weight:800;letter-spacing:.18em;line-height:1;margin:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pchip{background:#fff;border-radius:999px;padding:8px 14px;font-weight:600}
+.hostgrid{display:grid;grid-template-columns:minmax(260px,1fr) 1.3fr;gap:16px}
+@media(max-width:820px){.hostgrid{grid-template-columns:1fr}}
+.turnbar{background:var(--ink);color:#fff;border-radius:18px;padding:14px 16px;font-size:20px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.turnbar .t{background:var(--accent);border-radius:999px;padding:4px 12px;font-size:16px}
+table.board{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:15px}
+table.board th{text-align:left;font-size:11px;letter-spacing:.06em;opacity:.7;padding:0 8px}
+table.board td{background:var(--cream);padding:9px 8px}
+table.board td:first-child{border-radius:12px 0 0 12px;font-weight:700}
+table.board td:last-child{border-radius:0 12px 12px 0}
+table.board tr.now td{background:#fde9d8;box-shadow:inset 0 0 0 2px var(--accent)}
+.log{background:var(--cream);border-radius:16px;padding:10px 14px;font-size:14px;margin-top:12px}
+.log div{padding:5px 0;border-bottom:1px solid #efe7d3}.log div:last-child{border:0}
+.center{display:flex;flex-direction:column;align-items:center;gap:10px}
+.bincall{text-align:center;font-weight:800;font-size:16px}
+.bincall .chip{display:inline-block;color:#fff;border-radius:999px;padding:4px 12px;margin-left:4px}
+/* player */
+.topbar{display:flex;gap:8px;margin-bottom:10px}
+.pill{flex:1;background:var(--cream);border-radius:14px;padding:8px 10px;text-align:center}
+.pill b{display:block;font-size:20px;line-height:1.1}.pill small{font-size:11px;opacity:.75;font-weight:600}
+.msg{min-height:46px;text-align:center;font-size:14px;font-weight:500;background:var(--cream);border-radius:14px;padding:10px 12px;margin:10px 0}
+.msg.bad{background:#fde3e3;color:#8a1c1c}.msg.good{background:#e1f3dc;color:#21502a}
+.yourturn{background:var(--accent);color:#fff;border-radius:14px;text-align:center;font-weight:800;padding:10px;font-size:17px}
+.waiting{background:var(--ink);color:#fff;border-radius:14px;text-align:center;font-weight:600;padding:10px;font-size:15px}
+.hand{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:140px}
+.actions{display:flex;gap:10px;margin-top:14px}.actions .btn{flex:1}
+.btn.swachh{background:var(--accent);color:#fff;display:none}
+.btn.swachh.on{display:block;animation:pulse .7s infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+/* cards */
+.card{position:relative;width:96px;height:136px;border-radius:12px;border:0;padding:0;flex:none;color:#fff;overflow:hidden;box-shadow:0 3px 0 rgba(0,0,0,.15);transition:transform .15s}
+.card.big{width:160px;height:226px;border-radius:16px}
+.card.huge{width:230px;height:324px;border-radius:20px}
+.card .num{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:50%;background:#fff;color:var(--ink);font-family:"Noto Serif",serif;font-size:12px;display:grid;place-items:center;font-weight:700}
+.card .binlbl{position:absolute;top:9px;left:34px;right:6px;text-align:center;background:#fff;border-radius:999px;font-family:"Noto Serif",serif;font-weight:700;font-size:7.5px;padding:4px 2px;white-space:nowrap;overflow:hidden}
+.card .disc{position:absolute;left:50%;top:50%;transform:translate(-50%,-58%);width:62px;height:62px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:30px}
+.card .name{position:absolute;left:5px;right:5px;bottom:7px;font-family:"Noto Serif",serif;font-weight:700;font-size:11px;line-height:1.15;text-align:center;border-radius:8px;padding:4px 3px}
+.card.big .num,.card.huge .num{width:34px;height:34px;font-size:16px;top:9px;left:9px}
+.card.big .binlbl,.card.huge .binlbl{font-size:10px;top:54px;left:50%;right:auto;transform:translateX(-50%);padding:4px 10px}
+.card.big .disc{width:96px;height:96px;font-size:48px;transform:translate(-50%,-36%)}
+.card.big .name{font-size:15px;bottom:12px;left:10px;right:10px;padding:6px 4px}
+.card.huge .binlbl{font-size:13px;top:70px}
+.card.huge .disc{width:140px;height:140px;font-size:72px;transform:translate(-50%,-36%)}
+.card.huge .name{font-size:21px;bottom:16px;left:14px;right:14px;padding:8px 4px}
+.card.dry{background:repeating-linear-gradient(135deg,var(--dry1) 0 14px,var(--dry2) 14px 28px)}
+.card.wet{background:repeating-linear-gradient(135deg,var(--wet1) 0 14px,var(--wet2) 14px 28px)}
+.card.san{background:repeating-linear-gradient(135deg,var(--san1) 0 14px,var(--san2) 14px 28px)}
+.card.spc{background:repeating-linear-gradient(135deg,var(--spc1) 0 14px,var(--spc2) 14px 28px)}
+.card.dry .name{background:var(--dry1)}.card.dry .binlbl{color:var(--dry1)}
+.card.wet .name{background:var(--wet1)}.card.wet .binlbl{color:var(--wet1)}
+.card.san .name{background:var(--san1)}.card.san .binlbl{color:var(--san1)}
+.card.spc .name{background:var(--spc1)}.card.spc .binlbl{color:var(--spc1)}
+.card.mystery{background:var(--cream);color:var(--ink);border:2.5px dashed #b9ae92}
+.card.mystery .num,.card.mystery .name,.card.mystery .binlbl{background:#efe7d3;color:var(--ink)}
+.card.mystery .disc{box-shadow:inset 0 0 0 2px #efe7d3}
+.card.wild{background:repeating-linear-gradient(135deg,#2c5e3f 0 14px,#3f7c55 14px 28px)}
+.card.wild .name{background:#2c5e3f}.card.wild .binlbl{color:#2c5e3f}
+.hand .card{cursor:pointer}.hand .card:hover{transform:translateY(-4px)}
+.hand .card:disabled{cursor:default;opacity:.6;transform:none}
+.modal{position:fixed;inset:0;background:rgba(21,51,45,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal.on{display:flex}
+.sheet{background:var(--cream);border-radius:22px;max-width:520px;width:100%;padding:20px;max-height:88vh;overflow:auto}
+.sheet h2{font-family:"Noto Serif",serif;margin:0 0 10px;font-size:24px}
+.sheet li{margin-bottom:8px;font-size:14.5px}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.pick button{border:0;border-radius:14px;color:#fff;font-weight:700;font-size:15px;padding:18px 8px}
+.result{border-radius:24px;padding:22px 18px;text-align:center;color:#fff;background:var(--ink)}
+.result .big{font-family:"Noto Serif",serif;font-size:clamp(26px,7vw,38px);margin:4px 0}
+.rev{display:flex;gap:12px;align-items:center;background:var(--cream);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.rev .ic{font-size:28px;flex:none;width:44px;height:44px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.rev .tx{font-size:13.5px;line-height:1.35}
+.badge{display:inline-block;color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:4px}
+.podium{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:14px 0}
+.podium div{background:#fff;color:var(--ink);border-radius:16px;padding:12px 18px;min-width:140px;text-align:center}
+.podium b{display:block;font-size:20px}
+h3{font-family:"Noto Serif",serif;font-size:20px;margin:18px 0 8px}
+.note{font-size:12.5px;opacity:.75;text-align:center;margin-top:14px}
+.brandbar{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px 0 4px;font-size:12px;font-weight:600;opacity:.85}
+.brandbar img{width:44px;height:44px;border-radius:50%;background:#fff}
+.heroflex{display:flex;align-items:center;gap:14px;justify-content:center;flex-wrap:wrap}
+.hero .logo{width:92px;height:92px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.25)}
+.hero .mascot{height:170px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
+.herotext{flex:1;min-width:220px}
+.codebox .mascot{height:150px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.3))}
+.codeflex{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.turnbar .tlogo{width:38px;height:38px;border-radius:50%;background:#fff;vertical-align:middle;margin-right:10px}
+.waiting .mini-v{height:46px;vertical-align:middle;margin-right:8px}
+.waiting{display:flex;align-items:center;justify-content:center;gap:4px}
+.card .disc img.vface{width:100%;height:100%;object-fit:cover;object-position:50% 6%;border-radius:50%}
+.result .mascot{height:150px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.3))}
+.hostside{height:200px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.2))}
+@media(max-width:500px){.hero .mascot{height:130px}.hero .logo{width:72px;height:72px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+
+<!-- HOME -->
+<section class="screen on" id="home">
+  <div class="hero">
+    <div class="heroflex">
+      <img class="logo" src="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w300" alt="Green Future Collective logo">
+      <div class="herotext">
+        <div class="tag">GREEN FUTURE COLLECTIVE · SWM 2026</div>
+        <h1>Sort It Right UNO · Live</h1>
+        <p>Play together in real time. Put every item in the right bin and empty your hand first.</p>
+      </div>
+      <img class="mascot" src="https://lh3.googleusercontent.com/d/1JBVX3sb6kobyfRgKPLwQw6UkVjm2tCf4=w400" alt="Vanesh waving">
+    </div>
+  </div>
+  <div class="bins">
+    <div class="binchip bg-wet"><span>🍌</span>WET</div><div class="binchip bg-dry"><span>📦</span>DRY</div>
+    <div class="binchip bg-san"><span>🧻</span>SANITARY</div><div class="binchip bg-spc"><span>🔋</span>SPECIAL CARE</div>
+  </div>
+  <div class="panel">
+    <label class="lbl" for="jName">Your name</label>
+    <input type="text" id="jName" maxlength="24" placeholder="e.g. Neha" autocomplete="off">
+    <label class="lbl" for="jCode">Room code (from your facilitator)</label>
+    <input type="text" id="jCode" class="code" maxlength="4" placeholder="ABCD" autocomplete="off">
+    <button class="btn primary" id="joinBtn">Join game</button>
+    <div class="err" id="joinErr"></div>
+  </div>
+  <div class="panel">
+    <div style="font-weight:700">Facilitator?</div>
+    <div style="font-size:14px;margin-top:4px">Host on the screen you share. Players join from their phones with the room code.</div>
+    <button class="btn ghost" id="hostBtn">Host a new game</button>
+    <button class="btn ghost" id="rulesBtn">How to play</button>
+  </div>
+  <div class="status" id="homeStatus"></div>
+  <div class="brandbar"><img src="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w120" alt="">Green Future Collective · Sort It Right · SWM 2026</div>
+</section>
+
+<!-- HOST LOBBY -->
+<section class="screen" id="hLobby">
+  <div class="codebox"><div class="codeflex">
+    <img class="mascot" src="https://lh3.googleusercontent.com/d/1JBVX3sb6kobyfRgKPLwQw6UkVjm2tCf4=w400" alt="Vanesh waving">
+    <div>
+    <div style="font-weight:600;opacity:.85">Open the game link, tap <b>Join</b> and enter the room code</div>
+    <div class="c" id="hCode">----</div>
+    <div style="font-size:14px;opacity:.85" id="hConn">Connecting…</div>
+    </div>
+    <img class="logo" src="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w300" alt="Green Future Collective logo" style="width:110px;height:110px;border-radius:50%;background:#fff">
+  </div></div>
+  <div class="panel">
+    <div style="font-weight:700">Players joined: <span id="hCount">0</span></div>
+    <div class="chips" id="hChips"></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <div><label class="lbl" for="hTurnSecs">Seconds per turn</label>
+      <input type="text" id="hTurnSecs" value="30" inputmode="numeric" style="max-width:120px"></div>
+      <div><label class="lbl" for="hMins">Game length (minutes)</label>
+      <input type="text" id="hMins" value="8" inputmode="numeric" style="max-width:120px"></div>
+    </div>
+    <button class="btn primary" id="startBtn" disabled>Start game (needs 2+ players)</button>
+  </div>
+</section>
+
+<!-- HOST GAME -->
+<section class="screen" id="hGame">
+  <div class="turnbar"><div><img class="tlogo" src="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w120" alt="GFC"><span id="hTurn">Waiting…</span></div><div style="display:flex;gap:8px;align-items:center"><span style="font-size:15px;opacity:.85" id="hClock"></span><div class="t" id="hTimer">30</div></div></div>
+  <div class="hostgrid" style="margin-top:14px">
+    <div class="center">
+      <div class="bincall">Play a <span class="chip" id="hBin">WET</span> item</div>
+      <div style="display:flex;align-items:flex-end;gap:10px"><div id="hTop"></div><img class="hostside" id="hVanesh" src="https://lh3.googleusercontent.com/d/1bs0vW5i1i0YO1AWOWHDLRkglAPyFkR9n=w400" alt="Vanesh"></div>
+      <div style="font-size:13px;opacity:.7">Room <b id="hCode2"></b> · Draw pile <span id="hPile">0</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <button class="btn dark small" id="skipBtn">Skip turn</button>
+        <button class="btn dark small" id="endBtn">End game now</button>
+      </div>
+    </div>
+    <div>
+      <table class="board"><thead><tr><th>PLAYER</th><th>CARDS</th><th>SCORE</th><th>✓</th><th>✗</th><th></th></tr></thead><tbody id="hBoard"></tbody></table>
+      <div class="log" id="hLog"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLAYER WAIT -->
+<section class="screen" id="pWait">
+  <div class="hero"><div class="heroflex"><img class="logo" src="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w300" alt="Green Future Collective logo"><div class="herotext"><div class="tag">ROOM <span id="pwCode"></span></div><h1 id="pwHi">You're in!</h1><p>Waiting for the facilitator to start the game…</p></div><img class="mascot" src="https://lh3.googleusercontent.com/d/1JBVX3sb6kobyfRgKPLwQw6UkVjm2tCf4=w400" alt="Vanesh waving"></div></div>
+  <div class="panel"><div style="font-weight:700">Players in the room</div><div class="chips" id="pwChips"></div></div>
+  <div class="status" id="pwStatus"></div>
+</section>
+
+<!-- PLAYER GAME -->
+<section class="screen" id="pGame">
+  <div class="topbar">
+    <div class="pill"><b id="pScore">0</b><small>SCORE</small></div>
+    <div class="pill"><b id="pRight">0</b><small>CORRECT</small></div>
+    <div class="pill"><b id="pWrong">0</b><small>GALAT BIN</small></div>
+  </div>
+  <div id="pTurn" class="waiting">Waiting…</div>
+  <div style="display:flex;gap:14px;align-items:center;justify-content:center;margin-top:12px">
+    <div id="pTop"></div>
+    <div style="max-width:170px">
+      <div class="bincall" style="text-align:left">Bin in play<br><span class="chip" id="pBin" style="margin:6px 0 0">WET</span></div>
+      <div style="font-size:13px;margin-top:10px;opacity:.8" id="pOthers"></div>
+    </div>
+  </div>
+  <div class="msg" id="pMsg">Good luck!</div>
+  <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin:4px 2px 8px"><span>Your hand (<span id="pCount">0</span>)</span><span style="font-weight:500;font-size:12px;opacity:.7">Bins hidden until played</span></div>
+  <div class="hand" id="pHand"></div>
+  <div class="actions">
+    <button class="btn dark" id="drawBtn">No match? Draw</button>
+    <button class="btn swachh" id="swachhBtn">Say “SWACHH!”</button>
+  </div>
+  <div class="status" id="pStatus"></div>
+  <div class="brandbar"><img src="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w120" alt="">Green Future Collective</div>
+</section>
+
+<!-- FINAL (both) -->
+<section class="screen" id="final">
+  <div class="result">
+    <img class="mascot" id="fMascot" src="https://lh3.googleusercontent.com/d/1hyr11YHgwpY3Sgg_M8-Ax6Ld2jeyNnBM=w400" alt="Vanesh">
+    <div style="font-size:30px" id="fEmoji">🏆</div>
+    <div class="big" id="fTitle">Game over</div>
+    <div id="fSub" style="opacity:.9"></div>
+    <div class="podium" id="fPodium"></div>
+  </div>
+  <div id="fBoard"></div>
+  <div id="fReview"></div>
+  <button class="btn primary" id="fAgain" style="display:none">New game (same room)</button>
+  <div class="note">Bins follow the Solid Waste Management Rules, 2026: wet, dry, sanitary and special care.</div>
+  <div class="brandbar"><img src="https://lh3.googleusercontent.com/d/1yRB-JAl-N8K2VW8GpffW699VepoWJqHz=w120" alt="">Green Future Collective</div>
+</section>
+</div>
+
+<div class="modal" id="rulesModal"><div class="sheet">
+  <div style="display:flex;align-items:center;gap:10px"><img src="https://lh3.googleusercontent.com/d/1bs0vW5i1i0YO1AWOWHDLRkglAPyFkR9n=w200" alt="Vanesh" style="height:90px"><h2>How to play</h2></div>
+  <ol>
+    <li>The facilitator hosts the game on the shared screen. Everyone joins on their phone with the room code.</li>
+    <li>The card on the table shows which <b>bin</b> is in play. On your turn, tap a card from your hand that goes in the <b>same bin</b>. Your cards hide their bin!</li>
+    <li><b>Right bin:</b> +10 points. <b>Galat bin:</b> the card shows its real bin, −5 points, you draw 1 and your turn ends.</li>
+    <li>No match? Tap <b>Draw</b>. If time runs out, you draw automatically.</li>
+    <li>🍃 <b>Vanesh Wild</b> can be played any time. You choose the next bin.</li>
+    <li>On your last card, tap <b>SWACHH!</b> within 8 seconds (+5) or draw 2.</li>
+    <li>Empty your hand first (+50). The game ends when three players have finished or the clock runs out. Then the highest scores win.</li>
+  </ol>
+  <button class="btn primary" id="rulesClose">Got it</button>
+</div></div>
+
+<div class="modal" id="pickModal"><div class="sheet">
+  <h2>🍃 Vanesh Wild</h2><div style="font-size:14.5px">Choose the next bin:</div>
+  <div class="pick">
+    <button class="bg-wet" data-bin="wet">WET</button><button class="bg-dry" data-bin="dry">DRY</button>
+    <button class="bg-san" data-bin="san">SANITARY</button><button class="bg-spc" data-bin="spc">SPECIAL CARE</button>
+  </div>
+  <button class="btn ghost" id="pickCancel">Cancel</button>
+</div></div>
+
+<script>
+(function(){
+"use strict";
+const BROKERS=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt"];
+const NS="gfc-sortitright-v1/";
+const BINS={wet:{label:"WET WASTE",short:"WET",color:"var(--wet1)"},dry:{label:"DRY WASTE",short:"DRY",color:"var(--dry1)"},
+  san:{label:"SANITARY WASTE",short:"SANITARY",color:"var(--san1)"},spc:{label:"SPECIAL CARE WASTE",short:"SPECIAL CARE",color:"var(--spc1)"}};
+const CARDS=[
+[1,"Glass Jar","dry","🫙","Rinse it and hand it over with dry waste. Glass is fully recyclable."],
+[2,"Used Condom (Wrapper)","san","🔖","Wrap it in paper and put it with sanitary waste."],
+[3,"Leftover Cooked Rice","wet","🍚","Cooked food is wet waste and can be composted."],
+[4,"Fish Bones","wet","🐟","Bones and scraps from food are wet waste."],
+[5,"Used Adult Diaper","san","🩲","Wrap it in paper or a newspaper pouch and keep it with sanitary waste."],
+[6,"Old Newspaper","dry","📰","Keep paper clean and dry so the kabadiwala can recycle it."],
+[7,"Cardboard Box","dry","📦","Flatten it and give it with dry waste."],
+[8,"Broken Ceramic Mug","dry","☕","Ceramic does not compost. Wrap sharp pieces and give with dry waste."],
+[9,"Aluminium Foil","dry","🌯","Clean foil goes with dry waste. Scrape off food first."],
+[10,"Used Syringe / Needle","spc","💉","Sharps are special care waste. Never put them in the sanitary bag."],
+[11,"Worn-out Rubber Slipper","dry","🩴","Rubber and plastic footwear is dry waste."],
+[12,"Used Wet Wipes","san","🧻","Despite the name, wet wipes are NOT wet waste. They go with sanitary waste."],
+[13,"Nail Polish Bottle","spc","💅","It holds chemicals, so it is special care waste."],
+[14,"Stale Bread","wet","🍞","Old food is wet waste and can be composted."],
+[15,"Banana Peel","wet","🍌","Fruit peels are classic wet waste."],
+[16,"Empty Plastic Bottle","dry","🧴","Empty it and give it with dry waste for recycling."],
+[17,"Plastic Carry Bag","dry","🛍️","Clean plastic bags are dry waste."],
+[18,"Wilted Flowers (Puja Waste)","wet","🥀","Flowers are wet waste. Remove plastic, thread and foil first."],
+[19,"Fruit Rinds","wet","🍉","Rinds and peels are wet waste."],
+[20,"Expired Medicine Strip","spc","💊","Old medicines are special care waste. Never mix them with household waste."],
+[21,"Broken Wooden Spoon","dry","🥄","Wooden utensils go with dry waste."],
+[22,"Metal Tin Can","dry","🥫","Rinse it. Metal is valuable dry waste."],
+[23,"Used Tea Leaves / Bags","wet","🍵","Tea leaves are wet waste. Remove any staple from tea bags."],
+[24,"Eggshells","wet","🥚","Eggshells are wet waste and great for compost."],
+[25,"Empty Pesticide Can","spc","🧪","Pesticide containers are hazardous: special care waste."],
+[26,"Used Face Mask","san","😷","Used masks are sanitary waste."],
+[27,"Dead Battery","spc","🔋","Batteries leak harmful chemicals. Special care waste."],
+[28,"Broken Mercury Thermometer","spc","🌡️","Mercury is toxic. Seal it and keep it as special care waste."],
+[29,"Meat Scraps","wet","🍖","Meat and food scraps are wet waste."],
+[30,"Used Baby Diaper","san","👶","Wrap it and give it with sanitary waste."],
+[31,"Used Cotton Swabs","san","☁️","Used swabs and cotton are sanitary waste."],
+[32,"Used Tampon (Wrapped)","san","🌸","Wrap it in paper and give it with sanitary waste."],
+[33,"Vegetable Peelings","wet","🥕","Peels from the kitchen are wet waste."],
+[34,"Old Mobile Phone","spc","📱","E-waste is special care waste. Give it to an e-waste collector."],
+[35,"Used Bandage / Gauze","san","🩹","Used bandages are sanitary waste."],
+[36,"Used Sanitary Pad","san","🌸","Wrap it in paper and keep it with sanitary waste."],
+[37,"Used Tissue Paper","san","🤧","Used tissues are sanitary waste, not dry paper."],
+[38,"Old Motor Oil Container","spc","🛢️","Oil residue is hazardous: special care waste."],
+[39,"Empty Paint Can","spc","🎨","Paint residue is hazardous: special care waste."],
+[40,"Used CFL / LED Bulb","spc","💡","Bulbs can hold mercury or electronics. Special care waste."]
+].map(c=>({n:c[0],name:c[1],bin:c[2],icon:c[3],tip:c[4]}));
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const rid=n=>{const a="ABCDEFGHJKLMNPQRSTUVWXYZ";let s="";for(let i=0;i<n;i++)s+=a[Math.floor(Math.random()*a.length)];return s;};
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));$("wrap").classList.toggle("wide",id==="hGame");window.scrollTo(0,0);}
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
+
+function cardHTML(c,size,mystery){
+  if(c.wild) return `<div class="num">★</div><div class="binlbl">${size?"PICK A BIN":"WILD"}</div><div class="disc"><img class="vface" src="https://lh3.googleusercontent.com/d/1JBVX3sb6kobyfRgKPLwQw6UkVjm2tCf4=w300" alt="Vanesh"></div><div class="name">Vanesh Wild</div>`;
+  const lbl = mystery?"WHICH BIN?":(size?BINS[c.bin].label:BINS[c.bin].short);
+  return `<div class="num">${c.n}</div><div class="binlbl">${lbl}</div><div class="disc">${c.icon}</div><div class="name">${esc(c.name)}</div>`;
+}
+function cardCls(c,size,mystery){return "card"+(size?" "+size:"")+" "+(c.wild?"wild":(mystery?"mystery":c.bin));}
+function topHTML(c,bin,size){
+  if(!c) return "";
+  let h=`<div class="${cardCls(c,size,false)}">${cardHTML(c,size,false)}</div>`;
+  if(c.wild) h=h.replace("PICK A BIN","NOW: "+BINS[bin].short);
+  return h;
+}
+
+/* ---------- MQTT ---------- */
+function connectOne(url){
+  return new Promise(res=>{
+    if(!window.mqtt){res(null);return;}
+    let done=false;
+    const c=mqtt.connect(url,{clientId:"gfc_"+rid(10),clean:true,connectTimeout:8000,reconnectPeriod:3000,keepalive:30});
+    c.on("connect",()=>{if(!done){done=true;res(c);}});
+    c.on("error",()=>{});
+    setTimeout(()=>{if(!done){done=true;try{c.end(true);}catch(e){}res(null);}},9000);
+  });
+}
+
+/* ================= HOST ================= */
+const H={};
+async function startHost(){
+  show("hLobby");
+  H.code = rid(4);
+  $("hCode").textContent=H.code; $("hCode2").textContent=H.code;
+  H.players=[]; H.phase="lobby"; H.log=[]; H.ver=0;
+  let c=null;
+  for(const u of BROKERS){ $("hConn").textContent="Connecting…"; c=await connectOne(u); if(c){H.broker=u;break;} }
+  if(!c){ $("hConn").textContent="Could not reach the game server. Check the internet connection and reload."; return; }
+  H.c=c; $("hConn").textContent="Room is open ✓ Players can join now";
+  c.on("reconnect",()=>{$("hConn").textContent="Reconnecting…";});
+  c.on("connect",()=>{$("hConn").textContent="Room is open ✓";});
+  c.subscribe(NS+H.code+"/act",{qos:1});
+  c.on("message",(t,m)=>{ let d; try{d=JSON.parse(m.toString());}catch(e){return;} hostAct(d); });
+  pubState();
+  setInterval(hostTick,1000);
+}
+function hp(id){return H.players.find(p=>p.id===id);}
+function addLog(s){H.log.unshift(s);H.log=H.log.slice(0,7);}
+function hostAct(d){
+  if(!d||!d.id) return;
+  let p=hp(d.id);
+  if(d.t==="join"||d.t==="hello"){
+    const name=String(d.name||"Player").slice(0,24);
+    if(!p){
+      if(H.phase==="over") { pubState(); return; }
+      if(H.players.length>=12){ return; }
+      p={id:d.id,name,hand:[],score:0,right:0,wrong:0,place:0,mistakes:[],note:null,seen:Date.now()};
+      H.players.push(p);
+      if(H.phase==="play"){ dealTo(p, handSize()); H.order.push(p.id); addLog(`👋 ${esc(name)} joined the game`); }
+    } else { p.name=name; }
+    p.seen=Date.now();
+    renderHost(); pubState(); pubHand(p); return;
+  }
+  if(!p||H.phase!=="play") return;
+  p.seen=Date.now();
+  if(d.t==="swachh"){
+    if(H.swachh&&H.swachh.id===p.id){ H.swachh=null; p.score+=5; note(p,"🙌 SWACHH! +5","good"); addLog(`📣 ${esc(p.name)} says SWACHH!`); pubState(); pubHand(p);}
+    return;
+  }
+  if(H.turn!==p.id) return;
+  if(d.t==="draw"){ const c=drawOne(); if(c)p.hand.push(c); note(p,"You drew a card.",""); addLog(`🃏 ${esc(p.name)} draws a card`); nextTurn(); return; }
+  if(d.t==="play"){
+    const c=p.hand.find(x=>x.uid===d.uid); if(!c) return;
+    if(c.wild){
+      const b=BINS[d.bin]?d.bin:"wet";
+      p.hand=p.hand.filter(x=>x!==c); H.pile.push(c); H.bin=b;
+      note(p,`🍃 Wild played. Bin is now ${BINS[b].short}.`,"good"); addLog(`🍃 ${esc(p.name)} plays a Wild → ${BINS[b].short}`);
+      afterPlay(p); return;
+    }
+    if(c.bin===H.bin){
+      p.hand=p.hand.filter(x=>x!==c); H.pile.push(c); p.right++; p.score+=10;
+      note(p,`✅ Sahi! ${esc(c.name)} is ${BINS[c.bin].short}. +10`,"good"); addLog(`✅ ${esc(p.name)}: ${esc(c.name)} (${BINS[c.bin].short})`);
+      afterPlay(p); return;
+    }
+    // wrong
+    c.revealed=true; p.wrong++; p.score-=5;
+    if(!p.mistakes.find(m=>m.n===c.n)) p.mistakes.push({n:c.n,name:c.name,bin:c.bin,icon:c.icon,tip:c.tip,tried:H.bin});
+    const pen=p.hand.length<10; if(pen){const x=drawOne(); if(x)p.hand.push(x);}
+    note(p,`❌ Galat bin! ${esc(c.name)} is ${BINS[c.bin].short} waste. ${esc(c.tip)}${pen?" You draw 1.":""}`,"bad");
+    addLog(`❌ ${esc(p.name)} tried ${esc(c.name)} as ${BINS[H.bin].short}. It's ${BINS[c.bin].short}!`);
+    nextTurn();
+  }
+}
+function note(p,text,kind){p.note={text,kind,ts:Date.now()};}
+function afterPlay(p){
+  if(!p.hand.length){
+    p.score+=50; const places=H.players.filter(x=>x.place).length; p.place=places+1;
+    addLog(`🏆 ${esc(p.name)} finishes in place ${p.place}!`); note(p,`🏆 You finished! Place ${p.place}. +50`,"good");
+    H.order=H.order.filter(id=>id!==p.id);
+    if(H.swachh&&H.swachh.id===p.id) H.swachh=null;
+    const active=H.players.filter(x=>!x.place);
+    if(p.place>=3 || active.length<=1){ return endGame(); }
+    nextTurn(true); return;
+  }
+  if(p.hand.length===1){ H.swachh={id:p.id,until:Date.now()+8000}; }
+  nextTurn();
+}
+function handSize(){const n=H.players.length;return n>=9?3:n>=6?4:5;}
+function drawOne(){
+  if(!H.deck.length){ const top=H.pile.pop(); H.deck=shuffle(H.pile.map(c=>(c.revealed=false,c))); H.pile=[top]; }
+  return H.deck.pop()||null;
+}
+function dealTo(p,k){for(let i=0;i<k;i++){const c=drawOne(); if(c)p.hand.push(c);}}
+function hostStart(){
+  if(H.players.length<2) return;
+  const secs=parseInt($("hTurnSecs").value,10); H.turnSecs=(secs>=10&&secs<=120)?secs:30;
+  const mins=parseFloat($("hMins").value); H.gameEnds=Date.now()+((mins>=2&&mins<=30)?mins:8)*60000;
+  const deck=CARDS.map(c=>Object.assign({},c));
+  for(let i=0;i<4;i++) deck.push({n:"★",name:"Vanesh Wild",wild:true});
+  deck.forEach((c,i)=>{c.uid="c"+i;c.revealed=false;});
+  H.deck=shuffle(deck); H.pile=[];
+  H.players.forEach(p=>{p.hand=[];p.score=0;p.right=0;p.wrong=0;p.place=0;p.mistakes=[];p.note=null;});
+  const k=handSize(); H.players.forEach(p=>dealTo(p,k));
+  let first; do{first=H.deck.pop(); if(first.wild){H.deck.unshift(first);first=null;}}while(!first);
+  H.pile.push(first); H.bin=first.bin; H.order=shuffle(H.players.map(p=>p.id)); H.ti=0; H.turn=H.order[0];
+  H.turnEnds=Date.now()+H.turnSecs*1000; H.swachh=null; H.log=[]; H.phase="play";
+  addLog(`🎬 Game started! First bin: ${BINS[H.bin].short}`);
+  show("hGame"); renderHost(); pubState(); H.players.forEach(pubHand);
+}
+function nextTurn(currentRemoved){
+  if(H.phase!=="play") return;
+  const ids=H.order; if(!ids.length) return endGame();
+  if(currentRemoved){ H.ti=H.ti%ids.length; }
+  else { const i=ids.indexOf(H.turn); H.ti=(i<0?H.ti:i+1)%ids.length; }
+  H.turn=ids[H.ti]; H.turnEnds=Date.now()+H.turnSecs*1000;
+  renderHost(); pubState(); H.players.forEach(pubHand);
+}
+function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
+function hostTick(){
+  if(H.phase!=="play") return;
+  $("hClock").textContent="⏱ "+fmt(H.gameEnds-Date.now())+" left";
+  if(Date.now()>H.gameEnds){ addLog("⏱ Time's up!"); return endGame(); }
+  if(H.swachh && Date.now()>H.swachh.until){
+    const p=hp(H.swachh.id); H.swachh=null;
+    if(p&&!p.place){ dealTo(p,2); note(p,"😬 You forgot to say SWACHH! Draw 2.","bad"); addLog(`😬 ${esc(p.name)} forgot SWACHH! Draws 2`); pubHand(p); pubState(); renderHost(); }
+  }
+  if(Date.now()>H.turnEnds){
+    const p=hp(H.turn); if(p){ const c=drawOne(); if(c)p.hand.push(c); note(p,"⏰ Time's up! You drew a card.","bad"); addLog(`⏰ ${esc(p.name)} ran out of time and draws`); }
+    nextTurn(); return;
+  }
+  $("hTimer").textContent=Math.max(0,Math.ceil((H.turnEnds-Date.now())/1000));
+}
+function publicState(){
+  return {v:++H.ver,phase:H.phase,code:H.code,gameEnds:H.gameEnds||0,bin:H.bin||null,top:H.pile?H.pile[H.pile.length-1]:null,turn:H.turn||null,turnEnds:H.turnEnds||0,
+    swachh:H.swachh?H.swachh.id:null,log:H.log,
+    players:H.players.map(p=>({id:p.id,name:p.name,count:p.hand.length,score:p.score,right:p.right,wrong:p.wrong,place:p.place}))};
+}
+function pubState(){ if(H.c) H.c.publish(NS+H.code+"/state",JSON.stringify(publicState()),{qos:1,retain:true}); }
+function pubHand(p){
+  if(!H.c) return;
+  const cards=p.hand.map(c=>c.wild?{uid:c.uid,wild:true}:{uid:c.uid,n:c.n,name:c.name,icon:c.icon,revealed:!!c.revealed,bin:c.revealed?c.bin:undefined});
+  const msg={v:H.ver,cards,note:p.note,mistakes:H.phase==="over"?p.mistakes:undefined};
+  H.c.publish(NS+H.code+"/hand/"+p.id,JSON.stringify(msg),{qos:1,retain:true});
+}
+function endGame(){
+  H.phase="over"; H.turn=null;
+  // unplaced players ranked after by fewest cards, then score
+  const rest=H.players.filter(p=>!p.place).sort((a,b)=>b.score-a.score||a.hand.length-b.hand.length);
+  let pl=H.players.filter(p=>p.place).length; rest.forEach(p=>{p.place=++pl;});
+  addLog("🏁 Game over!");
+  pubState(); H.players.forEach(pubHand); renderFinal(publicState(),null,true);
+}
+function renderHost(){
+  if(H.phase==="lobby"){
+    $("hCount").textContent=H.players.length;
+    $("hChips").innerHTML=H.players.map(p=>`<span class="pchip">${esc(p.name)}</span>`).join("")||"<span style='opacity:.6'>Nobody yet…</span>";
+    $("startBtn").disabled=H.players.length<2;
+    $("startBtn").textContent=H.players.length<2?"Start game (needs 2+ players)":`Start game with ${H.players.length} players`;
+    return;
+  }
+  if(H.phase!=="play") return;
+  const cur=hp(H.turn);
+  $("hTurn").innerHTML=cur?`🎯 ${esc(cur.name)}'s turn`:"…";
+  $("hBin").textContent=BINS[H.bin].short; $("hBin").style.background=BINS[H.bin].color;
+  $("hTop").innerHTML=topHTML(H.pile[H.pile.length-1],H.bin,"huge");
+  $("hPile").textContent=H.deck.length;
+  const order=H.order.map(hp).concat(H.players.filter(p=>p.place));
+  $("hBoard").innerHTML=order.map(p=>`<tr class="${p.id===H.turn?"now":""}"><td>${esc(p.name)}${H.swachh&&H.swachh.id===p.id?" 📣":""}</td><td>${p.place?"—":p.hand.length}</td><td>${p.score}</td><td>${p.right}</td><td>${p.wrong}</td><td>${p.place?"🏆 #"+p.place:""}</td></tr>`).join("");
+  $("hLog").innerHTML=H.log.map(l=>`<div>${l}</div>`).join("");
+}
+
+/* ================= PLAYER ================= */
+const P={clients:[],state:null,hand:null,lastNote:0};
+async function startPlayer(){
+  const name=$("jName").value.trim(), code=$("jCode").value.trim().toUpperCase();
+  $("joinErr").textContent="";
+  if(!name){$("joinErr").textContent="Please type your name.";return;}
+  if(!/^[A-Z]{4}$/.test(code)){$("joinErr").textContent="The room code has 4 letters.";return;}
+  store("gfc-name",name);
+  P.id=store("gfc-pid")||("p"+rid(8)); store("gfc-pid",P.id);
+  P.name=name; P.code=code;
+  $("joinBtn").disabled=true; $("joinBtn").textContent="Connecting…";
+  P.clients=[];
+  const setup=c=>{
+    c.subscribe([NS+code+"/state",NS+code+"/hand/"+P.id],{qos:1});
+    c.on("message",(t,m)=>{let d;try{d=JSON.parse(m.toString());}catch(e){return;}
+      if(t.endsWith("/state")) onState(d); else onHand(d);});
+    c.on("connect",()=>send({t:"hello",name:P.name}));
+    P.clients.push(c);
+    c.publish(NS+code+"/act",JSON.stringify({t:"join",name,id:P.id}),{qos:1});
+  };
+  await new Promise(res=>{ let pending=BROKERS.length; BROKERS.forEach(u=>connectOne(u).then(c=>{ if(c){setup(c);res();} if(--pending===0)res(); })); });
+  if(!P.clients.length){ $("joinBtn").disabled=false; $("joinBtn").textContent="Join game"; $("joinErr").textContent="Could not reach the game server. Check your internet and try again."; return; }
+  P.joinTimer=setTimeout(()=>{ if(!P.state){ $("joinBtn").disabled=false; $("joinBtn").textContent="Join game"; $("joinErr").textContent="No game found with that code. Check it with your facilitator."; } },10000);
+  setInterval(()=>{ if(P.state&&P.state.phase!=="over") send({t:"hello",name:P.name}); },20000);
+}
+function send(o){ o.id=P.id; const s=JSON.stringify(o); P.clients.forEach(c=>{ try{c.publish(NS+P.code+"/act",s,{qos:1});}catch(e){} }); }
+function onState(s){
+  if(!s||!s.players) return;
+  if(P.state&&s.v<P.state.v&&s.phase===P.state.phase) return;
+  const me=s.players.find(p=>p.id===P.id);
+  if(!me){ // not yet registered: keep asking
+    if(s.phase!=="over") send({t:"join",name:P.name});
+    return;
+  }
+  clearTimeout(P.joinTimer);
+  P.state=s;
+  if(s.phase==="lobby"){
+    show("pWait"); $("pwCode").textContent=P.code; $("pwHi").textContent=`You're in, ${P.name}!`;
+    $("pwChips").innerHTML=s.players.map(p=>`<span class="pchip">${esc(p.name)}${p.id===P.id?" (you)":""}</span>`).join("");
+    return;
+  }
+  if(s.phase==="over"){ renderFinal(s,P.id,false); return; }
+  show("pGame"); renderPlayer();
+}
+function onHand(h){ if(!h||!h.cards) return; P.hand=h; if(P.state&&P.state.phase==="over"){renderFinal(P.state,P.id,false);return;} if(P.state&&P.state.phase==="play") renderPlayer(); }
+function renderPlayer(){
+  const s=P.state; if(!s) return;
+  const me=s.players.find(p=>p.id===P.id)||{};
+  $("pScore").textContent=me.score||0; $("pRight").textContent=me.right||0; $("pWrong").textContent=me.wrong||0;
+  const myTurn=s.turn===P.id && !me.place;
+  const cur=s.players.find(p=>p.id===s.turn);
+  const tb=$("pTurn");
+  if(me.place){ tb.className="yourturn"; tb.textContent=`🏆 You finished in place ${me.place}! Watch the others…`; }
+  else if(myTurn){ tb.className="yourturn"; tb.textContent=`🎯 Your turn! Play a ${BINS[s.bin].short} item`; }
+  else { tb.className="waiting"; tb.innerHTML=`<img class="mini-v" src="https://lh3.googleusercontent.com/d/1bs0vW5i1i0YO1AWOWHDLRkglAPyFkR9n=w160" alt="">`+esc(cur?`Waiting for ${cur.name}…`:"Waiting…"); }
+  $("pTop").innerHTML=topHTML(s.top,s.bin,"big");
+  $("pBin").textContent=BINS[s.bin].short; $("pBin").style.background=BINS[s.bin].color;
+  $("pOthers").innerHTML=s.players.filter(p=>p.id!==P.id).map(p=>`${esc(p.name)}: ${p.place?"🏆 done":p.count+" cards"}`).join("<br>");
+  const cards=(P.hand&&P.hand.cards)||[];
+  $("pCount").textContent=cards.length;
+  const h=$("pHand"); h.innerHTML="";
+  cards.forEach(c=>{
+    const b=document.createElement("button"); const myst=!c.wild&&!c.revealed;
+    b.className=cardCls(c,"",myst); b.innerHTML=cardHTML(c,"",myst); b.disabled=!myTurn;
+    b.setAttribute("aria-label",c.wild?"Vanesh Wild card":c.name);
+    b.addEventListener("click",()=>{
+      if(c.wild){ openPick(bin=>{send({t:"play",uid:c.uid,bin}); lockHand();}); }
+      else { send({t:"play",uid:c.uid}); lockHand(); }
+    });
+    h.appendChild(b);
+  });
+  $("drawBtn").disabled=!myTurn;
+  $("swachhBtn").classList.toggle("on", s.swachh===P.id);
+  const n=P.hand&&P.hand.note;
+  if(n&&n.ts!==P.lastNote){ P.lastNote=n.ts; const m=$("pMsg"); m.className="msg"+(n.kind?" "+n.kind:""); m.innerHTML=n.text; }
+  else if(myTurn && !n){ $("pMsg").className="msg"; $("pMsg").textContent="Tap a card you think goes in the same bin."; }
+}
+function lockHand(){ document.querySelectorAll("#pHand button").forEach(b=>b.disabled=true); $("drawBtn").disabled=true; }
+$("drawBtn").addEventListener("click",()=>{send({t:"draw"}); lockHand();});
+$("swachhBtn").addEventListener("click",()=>{send({t:"swachh"}); $("swachhBtn").classList.remove("on");});
+
+/* ---------- final ---------- */
+function renderFinal(s,myId,isHost){
+  show("final");
+  const ranked=s.players.slice().sort((a,b)=>(a.place||99)-(b.place||99));
+  const medals=["🥇","🥈","🥉"];
+  $("fPodium").innerHTML=ranked.slice(0,3).map((p,i)=>`<div>${medals[i]}<b>${esc(p.name)}</b>${p.score} pts</div>`).join("");
+  $("fBoard").innerHTML="<h3>Final scores</h3><table class='board'><tbody>"+ranked.map(p=>`<tr><td>#${p.place} ${esc(p.name)}${p.id===myId?" (you)":""}</td><td>${p.score} pts</td><td>✓ ${p.right}</td><td>✗ ${p.wrong}</td></tr>`).join("")+"</tbody></table>";
+  if(isHost){
+    $("fEmoji").textContent="🏁"; $("fTitle").textContent="Game over!"; $("fSub").textContent="Leaves: 🥇 3 · 🥈 2 · 🥉 1";
+    $("fReview").innerHTML=""; $("fAgain").style.display="block";
+  } else {
+    const me=s.players.find(p=>p.id===myId)||{};
+    $("fEmoji").textContent=me.place===1?"🏆":"🌿";
+    $("fMascot").src = (me.place&&me.place<=3) ? "https://lh3.googleusercontent.com/d/1hyr11YHgwpY3Sgg_M8-Ax6Ld2jeyNnBM=w400" : "https://lh3.googleusercontent.com/d/1JBVX3sb6kobyfRgKPLwQw6UkVjm2tCf4=w400";
+    $("fTitle").textContent=me.place?`You finished #${me.place}`:"Game over";
+    $("fSub").textContent=`${me.score||0} points · ${me.right||0} correct · ${me.wrong||0} galat bin`;
+    const ms=(P.hand&&P.hand.mistakes)||[];
+    $("fReview").innerHTML = ms.length ? "<h3>Cards that caught you out</h3>"+ms.map(m=>`<div class="rev"><div class="ic">${m.icon}</div><div class="tx"><b>${esc(m.name)}</b><span class="badge bg-${m.bin}">${BINS[m.bin].short}</span><br>You tried it as ${BINS[m.tried].short}. ${esc(m.tip)}</div></div>`).join("")
+      : "<h3>Perfect sorting! 🍃</h3>";
+  }
+}
+$("fAgain").addEventListener("click",()=>{
+  H.phase="lobby"; H.turn=null; H.pile=null; H.log=[];
+  H.players.forEach(p=>{p.hand=[];p.place=0;p.score=0;p.right=0;p.wrong=0;p.mistakes=[];p.note=null;});
+  show("hLobby"); renderHost(); pubState(); H.players.forEach(pubHand);
+});
+
+/* ---------- wild picker & rules ---------- */
+let pickCb=null;
+function openPick(cb){pickCb=cb;$("pickModal").classList.add("on");}
+document.querySelectorAll("#pickModal [data-bin]").forEach(b=>b.addEventListener("click",()=>{$("pickModal").classList.remove("on");const cb=pickCb;pickCb=null;if(cb)cb(b.dataset.bin);}));
+$("pickCancel").addEventListener("click",()=>{$("pickModal").classList.remove("on");pickCb=null;});
+$("rulesBtn").addEventListener("click",()=>$("rulesModal").classList.add("on"));
+$("rulesClose").addEventListener("click",()=>$("rulesModal").classList.remove("on"));
+
+/* ---------- wiring ---------- */
+$("hostBtn").addEventListener("click",startHost);
+$("startBtn").addEventListener("click",hostStart);
+$("skipBtn").addEventListener("click",()=>{const p=hp(H.turn); if(p) addLog(`⏭ Skipped ${esc(p.name)}`); nextTurn();});
+$("endBtn").addEventListener("click",()=>{ if(H.phase==="play") endGame(); });
+$("joinBtn").addEventListener("click",startPlayer);
+$("jCode").addEventListener("keydown",e=>{if(e.key==="Enter")startPlayer();});
+const savedName=store("gfc-name"); if(savedName) $("jName").value=savedName;
+if(!window.mqtt) $("homeStatus").textContent="⚠️ The game library did not load. Check the internet connection and reload.";
+})();
+</script>
+</body>
+</html>
